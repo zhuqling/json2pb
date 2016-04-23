@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+'use strict';
+var co = require('co');
+var json2pb = require(__dirname+"/../src/json2pb.js");
+
+co(function* () {
+    var result = yield json2pb.main(process.argv);
+    return result;
+}).then(function (result) {
+    process.exit(result);
+}, function (err) {
+    if(err.stack) {
+        console.error(err.stack);
+    }
+    process.exit(1);
+});

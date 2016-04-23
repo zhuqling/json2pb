@@ -1,0 +1,30 @@
+{
+  "name": "json2pb",
+  "version": "1.1.2",
+  "license": "MIT",
+  "author": "Randy Liu <randyliu@foxmail.com>",
+  "description": "Json2pb is a command line tool for converting json file to protobuf encoding file.",
+  "bin": {
+    "json2pb": "./bin/json2pb"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "preferGlobal": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/randyliu/json2pb.git"
+  },
+  "keywords": [
+    "json2pb",
+    "json",
+    "protobuf"
+  ],
+  "dependencies": {
+    "co" : "4.6.0",
+    "co-fs" : "1.2.0",
+    "ejs" : "2.4.1",
+    "protobufjs" : "5.0.1",
+    "posix-getopt" : "1.2.0"
+  }
+}
