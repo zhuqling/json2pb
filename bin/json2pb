@@ -2,7 +2,6 @@
 'use strict';
 var co = require('co');
 var json2pb = require(__dirname+"/../src/json2pb.js");
-var packer = require(__dirname+"/../src/packer.js");
 
 co(function* () {
     var result = yield json2pb.main(process.argv);
@@ -10,13 +9,6 @@ co(function* () {
 }).then(function (result) {
     process.exit(result);
 }, function (err) {
-    if(packer.stack.length > 0)
-    {
-        console.error('Errors appear in the object:');
-        var obj = packer.stack[packer.stack.length - 1];
-        console.error(JSON.stringify(obj, null, 4));
-        console.error();
-    }
     if(err.stack) {
         console.error(err.stack);
     } else {

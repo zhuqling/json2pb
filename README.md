@@ -2,9 +2,7 @@
 
 Json2pb是一个可以把json对象转换为Protobuf编码的命令行工具。
 
-
-	如果每一个json对象都含有_message字段来说明这个对象的类型
-	那么把Json对象用Protobuf打包只需要输入：json2pb -pmotion.proto motion.json
+把Json对象用Protobuf打包只需要输入：json2pb -pmotion.proto motion.json
 
 *想要把csv文件打包的朋友们， 可以先用[evalcsv](https://github.com/randyliu/evalcsv.git)把csv文件转换为json对象。*
 
@@ -26,19 +24,15 @@ Usage
 			Options:
 			-h, --help                   Display this information.
 			-v, --version                Print the compiler version.
-			-t, --tag                    The tag of storing message name, default is _message
-			-n, --namespace              Set the namespace to be built.
+			-m, --message                Set the message to be built.
 			-p, --proto                  Specify the .proto file for searching class name.
 
 Example
 -------
 
-- 每一个json对象必须含有一个_message字段来说明这个对象的类型。
-
     motion.json:
     
 		{
-		      "_message": "motion",
 		      "rows": [
 		          {
 		              "motion_id": 11001,
@@ -51,7 +45,6 @@ Example
 		              ],
 		              "type": "热身",
 		              "category": "胸",
-		              "_message": "motion_row"
 		          },
 		          {
 		              "motion_id": 11002,
@@ -64,7 +57,6 @@ Example
 		              ],
 		              "type": "热身",
 		              "category": "胸",
-		              "_message": "motion_row"
 		          }
 		      ]
 		    }

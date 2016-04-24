@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-message motion_row {
-	         int32 motion_id = 1;
-	         string name = 2;
-	repeated string privileges = 3;
-	         string type = 4;
-	         string category = 5;
-}

@@ -2,9 +2,7 @@
 var    mod_getopt = require('posix-getopt'),
         pkg     = require('../package.json'),
         ProtoBuf = require("protobufjs"),
-        packer  = require('./packer.js'),
-        cofs = require('co-fs'),
-        ejs = require('ejs');
+        cofs = require('co-fs');
 
 var json2pb = module.exports = {};
 
@@ -25,17 +23,16 @@ function help()
     console.error("Options:");
     console.error("  -h, --help                   Display this information.");
     console.error("  -v, --version                Print the compiler version.");
-    console.error("  -t, --tag                    The tag of storing message name, default is %s", packer.tag);
-    console.error("  -n, --namespace              Set the namespace to be built.");
-    console.error("  -p, --proto                  Specify the .proto file for searching class name.");
+    console.error("  -m, --message                Set the message to be built.");
+    console.error("  -p, --proto                  Specify the protobuf's .proto file.");
 }
 
 json2pb.main = function*(argv) {
     var parser, option;
+    var message = null;
     var builder = ProtoBuf.newBuilder({ convertFieldsToCamelCase: false });
 
-    parser = new mod_getopt.BasicParser('v(version)h(help)t:(tag)n:(namespace)p:(proto)', argv);
-    var namespace = '';
+    parser = new mod_getopt.BasicParser('v(version)h(help)m:(message)p:(proto)', argv);
     while ((option = parser.getopt()) !== undefined) {
         switch (option.option) {
             case 'v':
@@ -44,11 +41,8 @@ json2pb.main = function*(argv) {
             case 'h':
                 help();
                 return 0;
-            case 'n':
-                namespace = option.optarg;
-                break;
-            case 't':
-                packer.tag = option.optarg;
+            case 'm':
+                message = option.optarg;
                 break;
             case 'p':
                 ProtoBuf.loadProtoFile(option.optarg, builder);
@@ -60,12 +54,19 @@ json2pb.main = function*(argv) {
     }
 
     if (parser.optind() >= argv.length) {
-        console.error('Missing required argument: "input"');
+        console.error('Missing required argument: "file"');
         usage();
         return 1;
     }
-    packer.root = builder.build(namespace);
-    if(packer.root == null)
+
+    if(message == null) {
+        console.error('Missing --message=[messsage to be built].');
+        usage();
+        return 1;
+    }
+
+    var root = builder.build();
+    if(root == null)
     {
         console.error('Missing --proto=[protobuf .proto file].');
         usage();
@@ -83,8 +84,7 @@ json2pb.main = function*(argv) {
         }
 
         var str = yield cofs.readFile(input_file, 'utf8');
-        var obj = JSON.parse(str);
-        var pbobj = yield packer.json2pb(obj);
+        var pbobj = root[message].decodeJSON(str);
         var byteBuffer = pbobj.encode();
         var buffer = byteBuffer.toBuffer();
         yield cofs.writeFile(output_file, buffer);

@@ -1,6 +1,12 @@
 syntax = "proto3";
-import "motion_row.proto";
 
+message motion_row {
+	         int32 motion_id = 1;
+	         string name = 2;
+	repeated string privileges = 3;
+	         string type = 4;
+	         string category = 5;
+}
 
 message motion {
 	repeated motion_row rows = 1;
