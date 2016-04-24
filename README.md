@@ -1,6 +1,7 @@
 # json2pb
 
 Json2pb is a command line tool for converting json file to protobuf encoding file.
+
 Json2pb是一个可以把存储json对象的文件转换为存储Protobuf编码的文件。
 
 
@@ -24,14 +25,13 @@ Install
 
 Usage
 -----
-
-	Usage: json2pb [options] files
-    	Options:
-	      -h, --help                   Display this information.
-	      -v, --version                Print the compiler version.
-	      -t, --tag                    The tag of storing message name, default is _message
-	      -n, --namespace              Set the namespace to be built.
-	      -p, --proto                  Specify the .proto file for searching class name.
+		Usage: json2pb [options] files
+			Options:
+			-h, --help                   Display this information.
+			-v, --version                Print the compiler version.
+			-t, --tag                    The tag of storing message name, default is _message
+			-n, --namespace              Set the namespace to be built.
+			-p, --proto                  Specify the .proto file for searching class name.
 
 Example
 -------
