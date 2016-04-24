@@ -2,7 +2,7 @@
 
 Json2pb是一个可以把json对象转换为Protobuf编码的命令行工具。
 
-把Json对象用Protobuf打包只需要输入：json2pb -pmotion.proto motion.json
+把Json对象用Protobuf打包只需要输入：json2pb -pmotion.proto -mmotion motion.json
 
 *想要把csv文件打包的朋友们， 可以先用[evalcsv](https://github.com/randyliu/evalcsv.git)把csv文件转换为json对象。*
 
@@ -78,7 +78,7 @@ Example
 
   command line:
   
-		json2pb -pmotion.proto motion.json
+		json2pb -pmotion.proto -mmotion motion.json
     
     
 Author
