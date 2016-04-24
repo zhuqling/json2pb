@@ -83,7 +83,7 @@ json2pb.main = function*(argv) {
             output_file = input_file + '.pb';
         }
 
-        var str = yield cofs.readFile(input_file, 'utf8');
+        var str = yield cofs.readFile(input_file);
         var pbobj = root[message].decodeJSON(str);
         var byteBuffer = pbobj.encode();
         var buffer = byteBuffer.toBuffer();
