@@ -25,14 +25,17 @@ function help()
     console.error("Options:");
     console.error("  -h, --help                   Display this information.");
     console.error("  -v, --version                Print the compiler version.");
+    console.error("  -t, --tag                    The tag of storing message name, default is %s", packer.tag);
+    console.error("  -n, --namespace              Set the namespace to be built.");
     console.error("  -p, --proto                  Specify the .proto file for searching class name.");
 }
 
 json2pb.main = function*(argv) {
     var parser, option;
+    var builder = ProtoBuf.newBuilder({ convertFieldsToCamelCase: false });
 
-    parser = new mod_getopt.BasicParser('v(version)h(help)n:(namespace)p:(proto)', argv);
-
+    parser = new mod_getopt.BasicParser('v(version)h(help)t:(tag)n:(namespace)p:(proto)', argv);
+    var namespace = '';
     while ((option = parser.getopt()) !== undefined) {
         switch (option.option) {
             case 'v':
@@ -42,11 +45,13 @@ json2pb.main = function*(argv) {
                 help();
                 return 0;
             case 'n':
-                packer.namespace = option.optarg;
+                namespace = option.optarg;
+                break;
+            case 't':
+                packer.tag = option.optarg;
                 break;
             case 'p':
-                packer.builder = ProtoBuf.loadProtoFile(option.optarg);
-                packer.root = packer.builder.build(packer.namespace);
+                ProtoBuf.loadProtoFile(option.optarg, builder);
                 break;
             default:
                 /* error message already emitted by getopt */
@@ -55,9 +60,18 @@ json2pb.main = function*(argv) {
     }
 
     if (parser.optind() >= argv.length) {
-        usage('missing required argument: "input"');
+        console.error('Missing required argument: "input"');
+        usage();
         return 1;
     }
+    packer.root = builder.build(namespace);
+    if(packer.root == null)
+    {
+        console.error('Missing --proto=[protobuf .proto file].');
+        usage();
+        return 1;
+    }
+
 
     for(var i = parser.optind(); i < argv.length; ++i) {
         var input_file = argv[i];
@@ -70,9 +84,10 @@ json2pb.main = function*(argv) {
 
         var str = yield cofs.readFile(input_file, 'utf8');
         var obj = JSON.parse(str);
-        var buff = packer.encode(obj);
-        console.log(buff);
-        yield cofs.writeFile(output_file, buff);
+        var pbobj = yield packer.json2pb(obj);
+        var byteBuffer = pbobj.encode();
+        var buffer = byteBuffer.toBuffer();
+        yield cofs.writeFile(output_file, buffer);
         yield cofs.chmod(output_file, 438);
     }
 
