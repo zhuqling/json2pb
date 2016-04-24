@@ -7,7 +7,7 @@ ProtoBuf = require("protobufjs"),
 
 var builder = ProtoBuf.newBuilder({ convertFieldsToCamelCase: false });
 ProtoBuf.loadProtoFile(__dirname + '/motion.proto', builder);
-var root = builder.build('json2pb');
+var root = builder.build('');
 
 
 var buffer = fs.readFileSync(__dirname + '/motion.pb');

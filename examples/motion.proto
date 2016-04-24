@@ -1,5 +1,4 @@
 syntax = "proto3";
-package json2pb;
 import "motion_row.proto";
 
 

@@ -1,5 +1,4 @@
 syntax = "proto3";
-package json2pb;
 
 message motion_row {
 	         int32 motion_id = 1;
