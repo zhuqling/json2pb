@@ -1,19 +1,116 @@
 #!/usr/bin/env node
 'use strict';
-var co = require('co');
-var json2pb = require(__dirname+"/../src/json2pb.js");
+var Json2pb = require(__dirname+"/../lib/json2pb.js");
+
+var mod_getopt = require('posix-getopt'),
+    pkg     = require('../package.json'),
+    cofs = require('co-fs'),
+    co = require('co'),
+    ProtoBuf = require("protobufjs");
+
+function version()
+{
+    console.log("%s version %s", pkg['name'], pkg['version']);
+}
+
+function usage()
+{
+    console.error("Usage: %s [options] files\n", pkg['name']);
+    console.error("Use %s --help for a list of options", pkg['name']);
+}
+
+function help()
+{
+    console.error("Usage: %s [options] files", pkg['name']);
+    console.error("Options:");
+    console.error("  -h, --help                   Display this information.");
+    console.error("  -v, --version                Print the compiler version.");
+    console.error("  -m, --message                Set the message to be built.");
+    console.error("  -p, --proto                  Specify the protobuf's .proto file.");
+}
+
+function* main(argv) {
+    var parser, option;
+    var message = null;
+    var builder = ProtoBuf.newBuilder({ convertFieldsToCamelCase: false });
+
+    parser = new mod_getopt.BasicParser('v(version)h(help)m:(message)p:(proto)', argv);
+    while ((option = parser.getopt()) !== undefined) {
+        switch (option.option) {
+            case 'v':
+                version();
+                return 0;
+            case 'h':
+                help();
+                return 0;
+            case 'm':
+                message = option.optarg;
+                break;
+            case 'p':
+                ProtoBuf.loadProtoFile(option.optarg, builder);
+                break;
+            default:
+                /* error message already emitted by getopt */
+                return 1;
+        }
+    }
+
+    if (parser.optind() >= argv.length) {
+        console.error('Missing required argument: "file"');
+        usage();
+        return 1;
+    }
+
+    if(message == null) {
+        console.error('Missing --message=[messsage to be built].');
+        usage();
+        return 1;
+    }
+
+    var root = builder.build();
+    if(root == null)
+    {
+        console.error('Missing --proto=[protobuf .proto file].');
+        usage();
+        return 1;
+    }
+
+
+    var json2pb = new Json2pb();
+    for(var i = parser.optind(); i < argv.length; ++i) {
+        var input_file = argv[i];
+        var output_file = null;
+        if (input_file.substring(input_file.length - 5, input_file.length) == '.json') {
+            output_file = input_file.substring(0, input_file.length - 5) + '.pb';
+        } else {
+            output_file = input_file + '.pb';
+        }
+
+        var str = yield cofs.readFile(input_file, 'utf8');
+
+        var jo = JSON.parse(str);
+        var T = root[message];;
+        var pbobj = yield json2pb.jsonDecode(jo, T);
+        var byteBuffer = pbobj.encode();
+        var buffer = byteBuffer.toBuffer();
+        yield cofs.writeFile(output_file, buffer);
+        yield cofs.chmod(output_file, 438);
+    }
+
+    return 0;
+};
+
 
 co(function* () {
-    var result = yield json2pb.main(process.argv);
+    var result = yield main(process.argv);
     return result;
 }).then(function (result) {
     process.exit(result);
 }, function (err) {
-    if(err.stack) {
-        console.error(err.stack);
-    } else {
-        console.error(err.message);
+    if(err.json2pb) {
+        console.error(err.json2pb.obj);
     }
+    console.error(err.message);
     process.exit(1);
 });
 
