@@ -25,16 +25,18 @@ function help()
     console.error("Options:");
     console.error("  -h, --help                   Display this information.");
     console.error("  -v, --version                Print the compiler version.");
+    console.error("  -o, --output                 Encode to the file.");
     console.error("  -m, --message                Set the message to be built.");
     console.error("  -p, --proto                  Specify the protobuf's .proto file.");
 }
 
 function* main(argv) {
     var parser, option;
+    var output_file = null;
     var message = null;
     var builder = ProtoBuf.newBuilder({ convertFieldsToCamelCase: false });
 
-    parser = new mod_getopt.BasicParser('v(version)h(help)m:(message)p:(proto)', argv);
+    parser = new mod_getopt.BasicParser('v(version)h(help)o:(output)m:(message)p:(proto)', argv);
     while ((option = parser.getopt()) !== undefined) {
         switch (option.option) {
             case 'v':
@@ -43,6 +45,9 @@ function* main(argv) {
             case 'h':
                 help();
                 return 0;
+            case 'o':
+                output_file = option.optarg;
+                break;
             case 'm':
                 message = option.optarg;
                 break;
@@ -79,11 +84,12 @@ function* main(argv) {
     //var json2pb = new Json2pb();
     for(var i = parser.optind(); i < argv.length; ++i) {
         var input_file = argv[i];
-        var output_file = null;
-        if (input_file.substring(input_file.length - 5, input_file.length) == '.json') {
-            output_file = input_file.substring(0, input_file.length - 5) + '.pb';
-        } else {
-            output_file = input_file + '.pb';
+        if(output_file == null) {
+            if (input_file.substring(input_file.length - 5, input_file.length) == '.json') {
+                output_file = input_file.substring(0, input_file.length - 5) + '.pb';
+            } else {
+                output_file = input_file + '.pb';
+            }
         }
 
         var str = yield cofs.readFile(input_file, 'utf8');
