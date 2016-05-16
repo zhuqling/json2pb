@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 'use strict';
-var Json2pb = require(__dirname+"/../lib/json2pb.js");
-
 var mod_getopt = require('posix-getopt'),
     pkg     = require('../package.json'),
     cofs = require('co-fs'),
@@ -15,19 +13,19 @@ function version()
 
 function usage()
 {
-    console.error("Usage: %s [options] files\n", pkg['name']);
+    console.error("Usage: %s [options] file\n", pkg['name']);
     console.error("Use %s --help for a list of options", pkg['name']);
 }
 
 function help()
 {
-    console.error("Usage: %s [options] files", pkg['name']);
+    console.error("Usage: %s [options] file", pkg['name']);
     console.error("Options:");
     console.error("  -h, --help                   Display this information.");
     console.error("  -v, --version                Print the compiler version.");
     console.error("  -o, --output                 Encode to the file.");
-    console.error("  -m, --message                Set the message to be built.");
     console.error("  -p, --proto                  Specify the protobuf's .proto file.");
+    console.error("  -m, --message                Set the message to be built.");
 }
 
 function* main(argv) {
@@ -48,22 +46,16 @@ function* main(argv) {
             case 'o':
                 output_file = option.optarg;
                 break;
-            case 'm':
-                message = option.optarg;
-                break;
             case 'p':
                 ProtoBuf.loadProtoFile(option.optarg, builder);
+                break;
+            case 'm':
+                message = option.optarg;
                 break;
             default:
                 /* error message already emitted by getopt */
                 return 1;
         }
-    }
-
-    if (parser.optind() >= argv.length) {
-        console.error('Missing required argument: "file"');
-        usage();
-        return 1;
     }
 
     if(message == null) {
@@ -80,40 +72,29 @@ function* main(argv) {
         return 1;
     }
 
-
-    var json2pb = new Json2pb();
-    for(var i = parser.optind(); i < argv.length; ++i) {
-        var input_file = argv[i];
-        if(output_file == null) {
-            if (input_file.substring(input_file.length - 5, input_file.length) == '.json') {
-                output_file = input_file.substring(0, input_file.length - 5) + '.pb';
-            } else {
-                output_file = input_file + '.pb';
-            }
-        }
-
-        var str = yield cofs.readFile(input_file, 'utf8');
-
-        //var jo = JSON.parse(str);
-        var T = root[message];
-        /*
-        T.prototype.$set = function(keyOrObj, value, noAssert) {
-            return T.prototype.set.call(this, keyOrObj, value, true);
-        };
-        T.prototype.$add = function(keyOrObj, value, noAssert) {
-            return T.prototype.add.call(this, keyOrObj, value, true);
-        };
-        */
-        //var pbobj = yield json2pb.jsonDecode(jo, T);
-        var pbobj = T.decodeJSON(str);
-        var byteBuffer = pbobj.encode();
-        var buffer = byteBuffer.toBuffer();
-        yield cofs.writeFile(output_file, buffer);
-        yield cofs.chmod(output_file, 438);
+    if (parser.optind() >= argv.length) {
+        console.error('Missing required argument: "file"');
+        usage();
+        return 1;
     }
+    var input_file = argv[parser.optind()];
+    if(output_file == null) {
+        if (input_file.substring(input_file.length - 5, input_file.length) == '.json') {
+            output_file = input_file.substring(0, input_file.length - 5) + '.pb';
+        } else {
+            output_file = input_file + '.pb';
+        }
+    }
+    var str = yield cofs.readFile(input_file, 'utf8');
+    var T = root[message];
+    var pbobj = T.decodeJSON(str);
+    var byteBuffer = pbobj.encode();
+    var buffer = byteBuffer.toBuffer();
+    yield cofs.writeFile(output_file, buffer);
+    yield cofs.chmod(output_file, 438);
 
     return 0;
-};
+}
 
 co(function* () {
     var result = yield main(process.argv);
@@ -121,10 +102,6 @@ co(function* () {
 }).then(function (result) {
     process.exit(result);
 }, function (err) {
-    if(err.json2pb) {
-        console.error(err.json2pb.obj);
-    }
-    console.error(err.stack);
     console.error(err.message);
     process.exit(1);
 });
