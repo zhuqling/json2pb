@@ -94,7 +94,7 @@ function* main(argv) {
 
         var str = yield cofs.readFile(input_file, 'utf8');
 
-        var jo = JSON.parse(str);
+        //var jo = JSON.parse(str);
         var T = root[message];
         /*
         T.prototype.$set = function(keyOrObj, value, noAssert) {
@@ -104,9 +104,9 @@ function* main(argv) {
             return T.prototype.add.call(this, keyOrObj, value, true);
         };
         */
-        var pbobj = yield json2pb.jsonDecode(jo, T);
-        //var pbobj = T.decodeJSON(str);
-        var byteBuffer = pbobj.encode(true);
+        //var pbobj = yield json2pb.jsonDecode(jo, T);
+        var pbobj = T.decodeJSON(str);
+        var byteBuffer = pbobj.encode();
         var buffer = byteBuffer.toBuffer();
         yield cofs.writeFile(output_file, buffer);
         yield cofs.chmod(output_file, 438);
@@ -114,7 +114,6 @@ function* main(argv) {
 
     return 0;
 };
-
 
 co(function* () {
     var result = yield main(process.argv);
@@ -129,4 +128,3 @@ co(function* () {
     console.error(err.message);
     process.exit(1);
 });
-
