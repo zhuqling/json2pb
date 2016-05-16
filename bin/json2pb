@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-//var Json2pb = require(__dirname+"/../lib/json2pb.js");
+var Json2pb = require(__dirname+"/../lib/json2pb.js");
 
 var mod_getopt = require('posix-getopt'),
     pkg     = require('../package.json'),
@@ -81,7 +81,7 @@ function* main(argv) {
     }
 
 
-    //var json2pb = new Json2pb();
+    var json2pb = new Json2pb();
     for(var i = parser.optind(); i < argv.length; ++i) {
         var input_file = argv[i];
         if(output_file == null) {
@@ -94,16 +94,18 @@ function* main(argv) {
 
         var str = yield cofs.readFile(input_file, 'utf8');
 
-        //var jo = JSON.parse(str);
+        var jo = JSON.parse(str);
         var T = root[message];
+        /*
         T.prototype.$set = function(keyOrObj, value, noAssert) {
             return T.prototype.set.call(this, keyOrObj, value, true);
         };
         T.prototype.$add = function(keyOrObj, value, noAssert) {
             return T.prototype.add.call(this, keyOrObj, value, true);
         };
-        //var pbobj = yield json2pb.jsonDecode(jo, T);
-        var pbobj = T.decodeJSON(str);
+        */
+        var pbobj = yield json2pb.jsonDecode(jo, T);
+        //var pbobj = T.decodeJSON(str);
         var byteBuffer = pbobj.encode(true);
         var buffer = byteBuffer.toBuffer();
         yield cofs.writeFile(output_file, buffer);
