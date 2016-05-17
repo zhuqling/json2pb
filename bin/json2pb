@@ -48,7 +48,7 @@ var load = function(filename, options, loaded) {
     try {
         data = ProtoBuf.DotProto.Parser.parse(fs.readFileSync(filename).toString("utf8"));
     } catch (error) {
-        error.filename = filename;
+        error.message = 'Failed to load ' + filename + ', ' + error.message;
         throw error;
     }
     loaded.push(filename);
@@ -136,7 +136,6 @@ function* main(argv) {
         return 1;
     }
 
-    var json2pb = new Json2pb();
     var input_file = argv[parser.optind()];
     if(output_file == null) {
         if (input_file.substring(input_file.length - 5, input_file.length) == '.json') {
@@ -146,9 +145,22 @@ function* main(argv) {
         }
     }
 
-    var str = yield cofs.readFile(input_file, 'utf8');
+    var str_array = [];
+    for(var i = parser.optind(); i < argv.length; ++i) {
+        str_array.push(yield cofs.readFile(argv[i], 'utf8'));
+    }
+    var str = str_array[0];
+    if(str_array.length > 1) {
+        str = '{' + str_array.join(',') + '}';
+    }
+    try {
+        var jo = JSON.parse(str);
+    } catch (error) {
+        throw new Error('Failed to parse json,  ' + error.message);
+    }
+
+    var json2pb = new Json2pb();
     //JSON.parse()有64位整数溢出bug
-    var jo = JSON.parse(str);
     var T = root[message];
     var pbobj = json2pb.jsonDecode(jo, T);
     var byteBuffer = pbobj.encode(true);
@@ -168,7 +180,7 @@ function* main(argv) {
     }
 
     return 0;
-};
+}
 
 
 co(function* () {
@@ -177,27 +189,6 @@ co(function* () {
 }).then(function (result) {
     process.exit(result);
 }, function (err) {
-    if(err.filename) {//解析protobuf时候的错误
-        console.error('Error: ' + err.filename + ':' + err.message);
-    } else if(err.jo) {//解析json时候的错误
-        var o = {};
-        var i = 0;
-        for(var field in err.jo) {
-            if(typeof err.jo[field] == "object") {
-                continue;
-            }
-            if(i > 5) {
-                break;
-            }
-            o[field] = err.jo[field];
-            ++i;
-        }
-        var str = JSON.stringify(o);
-        str = str.substring(0, str.length - 1);
-        str += '........' + '}';
-        console.error('Error: ' + err.message + '.\t\t' + str);
-    } else {
-        console.error('Error: ' + err.message);
-    }
+    console.error('Error: ' + err.message);
     process.exit(1);
 });
