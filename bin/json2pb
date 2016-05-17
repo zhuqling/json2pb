@@ -30,6 +30,7 @@ function help()
     console.error("  -v, --version                Print the compiler version.");
     console.error("  -I, --include                Specify the directory in which to search for imports.");
     console.error("  -d, --dependency             Output a rule suitable for make describing the dependencies of the main source file.");
+    console.error("  -j, --join                   Output joined file.");
     console.error("  -o, --output                 Encode to the file.");
     console.error("  -m, --message                Set the message to be built.");
     console.error("  -p, --proto                  Specify the protobuf's .proto file.");
@@ -80,11 +81,12 @@ function* main(argv) {
     var output_file = null;
     var message = null;
     var dep_file = null;
+    var joined_file = null;
     var builder = ProtoBuf.newBuilder({ convertFieldsToCamelCase: false });
     var path = [];
     var loaded = [];
 
-    parser = new mod_getopt.BasicParser('v(version)h(help)I:(include)d:(dependency)o:(output)m:(message)p:(proto)', argv);
+    parser = new mod_getopt.BasicParser('v(version)h(help)I:(include)d:(dependency)j:(join)o:(output)m:(message)p:(proto)', argv);
     while ((option = parser.getopt()) !== undefined) {
         switch (option.option) {
             case 'h':
@@ -102,6 +104,9 @@ function* main(argv) {
             case 'o':
                 output_file = option.optarg;
                 break;
+            case 'j':
+                joined_file = option.optarg;
+                break;
             case 'm':
                 message = option.optarg;
                 break;
@@ -114,37 +119,7 @@ function* main(argv) {
                 return 1;
         }
     }
-    builder.resolveAll();
-
-    if(message == null) {
-        console.error('Missing --message=[messsage to be built].');
-        usage();
-        return 1;
-    }
-
-    var root = builder.build();
-    if(root == null)
-    {
-        console.error('Missing --proto=[protobuf .proto file].');
-        usage();
-        return 1;
-    }
-
-    if (parser.optind() >= argv.length) {
-        console.error('Missing required argument: "file"');
-        usage();
-        return 1;
-    }
-
-    var input_file = argv[parser.optind()];
-    if(output_file == null) {
-        if (input_file.substring(input_file.length - 5, input_file.length) == '.json') {
-            output_file = input_file.substring(0, input_file.length - 5) + '.pb';
-        } else {
-            output_file = input_file + '.pb';
-        }
-    }
-
+    //1.计算jo
     var str_array = [];
     for(var i = parser.optind(); i < argv.length; ++i) {
         str_array.push(yield cofs.readFile(argv[i], 'utf8'));
@@ -158,30 +133,62 @@ function* main(argv) {
     } catch (error) {
         throw new Error('Failed to parse json,  ' + error.message);
     }
-
-    var json2pb = new Json2pb();
-    //JSON.parse()有64位整数溢出bug
-    var T = root[message];
-    var pbobj = json2pb.jsonDecode(jo, T);
-    var byteBuffer = pbobj.encode(true);
-    var buffer = byteBuffer.toBuffer();
-    yield cofs.writeFile(output_file, buffer);
-    yield cofs.chmod(output_file, 438);
-
-    if(dep_file) {
-        var dep = "";
-        dep += util.format("%s:\\\n", output_file );
-        for(var file of loaded) {
-            dep += util.format("    %s\\\n", file);
+    if(joined_file) {
+        if(str_array.length <= 0) {
+            console.error('Missing required argument: "files"');
+            usage();
+            return 1;
         }
-        dep += '\n';
-        yield cofs.writeFile(dep_file, dep);
-        yield cofs.chmod(dep_file, 438);
+        yield cofs.writeFile(joined_file, JSON.stringify(jo, null, 4));
+        yield cofs.chmod(joined_file, 438);
+    }
+
+
+    //2.根据输入的message进行打包
+    if(message != null) {
+        builder.resolveAll();
+        var root = builder.build();
+        if (parser.optind() >= argv.length) {
+            console.error('Missing required argument: "files"');
+            usage();
+            return 1;
+        }
+        var input_file = argv[parser.optind()];
+        if(output_file == null) {
+            if (input_file.substring(input_file.length - 5, input_file.length) == '.json') {
+                output_file = input_file.substring(0, input_file.length - 5) + '.pb';
+            } else {
+                output_file = input_file + '.pb';
+            }
+        }
+
+        var json2pb = new Json2pb();
+        //JSON.parse()有64位整数溢出bug
+        var T = root[message];
+        if(T == null)
+        {
+            throw new Error(util.format('Failed to find message[%s].', message));
+        }
+        var pbobj = json2pb.jsonDecode(jo, T);
+        var byteBuffer = pbobj.encode(true);
+        var buffer = byteBuffer.toBuffer();
+        yield cofs.writeFile(output_file, buffer);
+        yield cofs.chmod(output_file, 438);
+
+        if(dep_file) {
+            var dep = "";
+            dep += util.format("%s:\\\n", output_file );
+            for(var file of loaded) {
+                dep += util.format("    %s\\\n", file);
+            }
+            dep += '\n';
+            yield cofs.writeFile(dep_file, dep);
+            yield cofs.chmod(dep_file, 438);
+        }
     }
 
     return 0;
 }
-
 
 co(function* () {
     var result = yield main(process.argv);
