@@ -2,7 +2,13 @@
 
 Json2pb是一个可以把json对象转换为Protobuf编码的命令行工具。
 
+-修复protobufjs整数溢出不报错的问题
+-忽略protobufjs对于optional字段不存在依然报错的问题。
+-增加makefile依赖文件输出的功能。
+-Node.js 64位整数出错的问题依旧木有解决~~
+
 把Json对象用Protobuf打包只需要输入：json2pb -pmotion.proto -mmotion motion.json
+
 
 *想要把csv文件打包的朋友们， 可以先用[evalcsv](https://github.com/randyliu/evalcsv.git)把csv文件转换为json对象。*
 
