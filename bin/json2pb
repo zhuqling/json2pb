@@ -146,10 +146,9 @@ function* main(argv) {
         }
     }
 
-//    var str = yield cofs.readFile(input_file, 'utf8');
+    var str = yield cofs.readFile(input_file, 'utf8');
     //JSON.parse()有64位整数溢出bug
-//    var jo = JSON.parse(str);
-    var jo = require(input_file);
+    var jo = JSON.parse(str);
     var T = root[message];
     var pbobj = json2pb.jsonDecode(jo, T);
     var byteBuffer = pbobj.encode(true);
