@@ -119,7 +119,19 @@ function* main(argv) {
                 return 1;
         }
     }
-    //1.计算jo
+
+    if(parser.optind() >= argv.length) {
+        console.error('Missing required argument: "files"');
+        usage();
+        return 1;
+    }
+
+    if((joined_file == null) && (message == null)) {
+        console.error('Please enter -j to join file or -m to encode file.');
+        usage();
+        return 1;
+    }
+
     var str_array = [];
     for(var i = parser.optind(); i < argv.length; ++i) {
         str_array.push(yield cofs.readFile(argv[i], 'utf8'));
@@ -133,26 +145,18 @@ function* main(argv) {
     } catch (error) {
         throw new Error('Failed to parse json,  ' + error.message);
     }
+
+
+    //1. 输出合并后的json文件
     if(joined_file) {
-        if(str_array.length <= 0) {
-            console.error('Missing required argument: "files"');
-            usage();
-            return 1;
-        }
         yield cofs.writeFile(joined_file, JSON.stringify(jo, null, 4));
         yield cofs.chmod(joined_file, 438);
     }
 
-
-    //2.根据输入的message进行打包
-    if(message != null) {
+    //2. 根据输入的message进行打包
+    if(message) {
         builder.resolveAll();
         var root = builder.build();
-        if (parser.optind() >= argv.length) {
-            console.error('Missing required argument: "files"');
-            usage();
-            return 1;
-        }
         var input_file = argv[parser.optind()];
         if(output_file == null) {
             if (input_file.substring(input_file.length - 5, input_file.length) == '.json') {
